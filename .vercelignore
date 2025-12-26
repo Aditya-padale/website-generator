@@ -1,0 +1,7 @@
+backend/
+.venv/
+.env
+.git/
+.github/
+.vscode/
+test/
