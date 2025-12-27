@@ -4,17 +4,14 @@
   "installCommand": "npm install",
   "outputDirectory": ".next",
   "functions": {
-    "api/generate-website.py": {
-      "runtime": "python3.9",
-      "maxDuration": 60
+    "api/generate-website-py.py": {
+      "runtime": "python3.12"
     },
-    "api/deploy-website.py": {
-      "runtime": "python3.9",
-      "maxDuration": 30
+    "api/deploy-website-py.py": {
+      "runtime": "python3.12"
     },
-    "api/test-gemini.py": {
-      "runtime": "python3.9",
-      "maxDuration": 30
+    "api/test-gemini-py.py": {
+      "runtime": "python3.12"
     }
   },
   "rewrites": [
