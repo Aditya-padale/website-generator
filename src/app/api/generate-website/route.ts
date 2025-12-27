@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
     try {
       genAI = new GoogleGenerativeAI(apiKey)
       console.log('GoogleGenerativeAI instance created')
-      // Use Gemini 2.5 Flash model as requested
-      model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
+      // Use Gemini 2.5 Flash model (stable version)
+      model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
       console.log('Model instance created')
     } catch (initError) {
       console.error('Error initializing Gemini:', initError)
