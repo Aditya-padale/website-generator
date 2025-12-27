@@ -29,7 +29,8 @@ export async function GET() {
     return NextResponse.json({ 
       success: true,
       apiKeyLength: apiKey.length,
-      testResponse: text.substring(0, 200)
+      testResponse: text.substring(0, 200),
+      usageMetadata: result.response.usageMetadata
     })
     
   } catch (error) {

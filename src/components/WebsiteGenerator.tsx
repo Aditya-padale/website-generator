@@ -20,7 +20,9 @@ export default function WebsiteGenerator() {
   const handleGenerate = async () => {
     if (!prompt.trim()) return
 
-   
+    setIsGenerating(true)
+    setCurrentStep('generating')
+    
     try {
       const response = await fetch('/api/generate-website', {
         method: 'POST',

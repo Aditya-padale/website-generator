@@ -2,5 +2,33 @@
   "framework": "nextjs",
   "buildCommand": "next build",
   "installCommand": "npm install",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "functions": {
+    "api/generate-website.py": {
+      "runtime": "python3.9",
+      "maxDuration": 60
+    },
+    "api/deploy-website.py": {
+      "runtime": "python3.9",
+      "maxDuration": 30
+    },
+    "api/test-gemini.py": {
+      "runtime": "python3.9",
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/generate-website-python",
+      "destination": "/api/generate-website"
+    },
+    {
+      "source": "/api/deploy-website-python", 
+      "destination": "/api/deploy-website"
+    },
+    {
+      "source": "/api/test-gemini-python",
+      "destination": "/api/test-gemini"
+    }
+  ]
 }
