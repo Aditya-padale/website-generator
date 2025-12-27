@@ -81,13 +81,23 @@ export default function WebsiteGenerator() {
         body: JSON.stringify({ code: generatedCode, prompt }),
       })
 
-      const data = await response.json()
+      // Get the raw response text first
+      const responseText = await response.text()
+      console.log('Deploy response:', responseText.substring(0, 500))
       
-      if (data.url) {
+      let data
+      try {
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error('Deploy JSON parse error:', parseError)
+        throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}...`)
+      }
+      
+      if (response.ok && data.url) {
         setDeployedUrl(data.url)
         setCurrentStep('deployed')
       } else {
-        throw new Error(data.detail || 'Failed to deploy website')
+        throw new Error(data.error || data.detail || 'Failed to deploy website')
       }
     } catch (error) {
       console.error('Error deploying website:', error)

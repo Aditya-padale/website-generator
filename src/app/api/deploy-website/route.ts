@@ -4,10 +4,24 @@ export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
-    const { code, prompt } = await request.json()
+    let code, prompt
+    try {
+      const body = await request.json()
+      code = body.code
+      prompt = body.prompt
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError)
+      return new NextResponse(JSON.stringify({ error: 'Invalid request body' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
 
     if (!code) {
-      return NextResponse.json({ error: 'Code is required' }, { status: 400 })
+      return new NextResponse(JSON.stringify({ error: 'Code is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      })
     }
 
     // For now, we'll simulate deployment by creating a simple URL
@@ -115,19 +129,24 @@ ${code}
     // Log the generated content (in a real app, this would be deployed)
     console.log('Generated website content:', fullHtmlContent.substring(0, 500) + '...')
 
-    return NextResponse.json({ 
+    return new NextResponse(JSON.stringify({ 
       url: mockUrl,
       deploymentId: mockDeploymentId,
       status: 'deployed',
       message: 'Website deployed successfully! (This is a demo - in production, this would be a real Vercel deployment)'
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
     })
 
   } catch (error) {
     console.error('Error deploying website:', error)
-    return NextResponse.json(
-      { error: 'Failed to deploy website' },
-      { status: 500 }
-    )
+    return new NextResponse(JSON.stringify(
+      { error: 'Failed to deploy website' }
+    ), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 }
 
