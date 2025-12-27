@@ -4,8 +4,9 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 export const maxDuration = 60; // Set max duration to 60 seconds for Vercel Hobby plan
 
 export async function POST(request: NextRequest) {
+  console.log('=== GENERATE WEBSITE API CALLED ===')
+  
   try {
-    console.log('=== GENERATE WEBSITE API CALLED ===')
     console.log('API Route called - checking environment variables...')
     
     const apiKey = process.env.GEMINI_API_KEY
@@ -16,9 +17,16 @@ export async function POST(request: NextRequest) {
       console.error('GEMINI_API_KEY is not set in environment variables')
       return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
     }
-    
-    const { prompt } = await request.json()
-    console.log('Received prompt:', prompt?.substring(0, 100) + '...')
+
+    let prompt
+    try {
+      const body = await request.json()
+      prompt = body.prompt
+      console.log('Received prompt:', prompt?.substring(0, 100) + '...')
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError)
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    }
 
     if (!prompt) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
@@ -30,7 +38,7 @@ export async function POST(request: NextRequest) {
       genAI = new GoogleGenerativeAI(apiKey)
       console.log('GoogleGenerativeAI instance created')
       // Use Gemini 2.5 Flash model as requested
-      model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+      model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
       console.log('Model instance created')
     } catch (initError) {
       console.error('Error initializing Gemini:', initError)
@@ -129,9 +137,14 @@ The website should be visually impressive and ready for production use.
     console.log('Cleaned code length:', cleanedCode.length)
     console.log('API request successful')
 
-    return NextResponse.json({ 
+    return new NextResponse(JSON.stringify({ 
       code: cleanedCode.trim(),
       prompt: prompt 
+    }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
 
   } catch (error) {
@@ -146,13 +159,18 @@ The website should be visually impressive and ready for production use.
       console.error('Gemini API Error Details:', error)
     }
     
-    return NextResponse.json(
-      { 
-        error: 'Failed to generate website',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
+    // Ensure we always return valid JSON
+    const errorResponse = {
+      error: 'Failed to generate website',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }
+    
+    return new NextResponse(JSON.stringify(errorResponse), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
       },
-      { status: 500 }
-    )
+    })
   }
 }

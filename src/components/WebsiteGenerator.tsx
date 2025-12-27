@@ -24,6 +24,7 @@ export default function WebsiteGenerator() {
     setCurrentStep('generating')
     
     try {
+      console.log('Sending request to generate-website API...')
       const response = await fetch('/api/generate-website', {
         method: 'POST',
         headers: {
@@ -32,7 +33,20 @@ export default function WebsiteGenerator() {
         body: JSON.stringify({ prompt }),
       })
 
-      const data = await response.json()
+      console.log('Response status:', response.status)
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+      
+      // Get the raw response text first
+      const responseText = await response.text()
+      console.log('Raw response:', responseText.substring(0, 500))
+      
+      let data
+      try {
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError)
+        throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}...`)
+      }
       
       if (!response.ok) {
         throw new Error(data.error || data.details || `Server error: ${response.status}`)

@@ -2,5 +2,24 @@
   "framework": "nextjs",
   "buildCommand": "next build",
   "installCommand": "npm install",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "functions": {
+    "api/*.py": {
+      "runtime": "python3.9"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/generate-website-py",
+      "destination": "/api/generate-website-py.py"
+    },
+    {
+      "source": "/api/deploy-website-py", 
+      "destination": "/api/deploy-website-py.py"
+    },
+    {
+      "source": "/api/test-gemini-py",
+      "destination": "/api/test-gemini-py.py"
+    }
+  ]
 }
