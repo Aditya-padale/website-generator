@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenerativeAI, GenerateContentResult } from '@google/generative-ai'
 
-export const maxDuration = 60; // Set max duration to 60 seconds for Vercel Hobby plan
+export const maxDuration = 30; // Reduced to 30 seconds for better reliability
 
 export async function POST(request: NextRequest) {
   console.log('=== GENERATE WEBSITE API CALLED ===')
@@ -49,63 +49,52 @@ export async function POST(request: NextRequest) {
     }
 
     const enhancedPrompt = `
-You are an expert web designer and developer. Create a complete, modern, and visually stunning HTML website based on this description: "${prompt}"
+Create a modern HTML website for: "${prompt}"
 
-CRITICAL REQUIREMENTS:
-1. Use modern HTML5 semantic elements with proper structure
-2. Include Tailwind CSS via CDN for professional styling
-3. Make it fully responsive for all screen sizes (mobile-first approach)
-4. Add smooth CSS animations, transitions, and hover effects
-5. Include proper meta tags and accessibility features
-6. Create a well-structured layout with header, main content sections, and footer
-7. Use modern typography (Inter, system fonts) and professional color schemes
-8. Add interactive elements and micro-animations
-9. Include relevant placeholder content that fits the theme perfectly
-10. Make it production-ready with pixel-perfect design
+REQUIREMENTS:
+1. Use Tailwind CSS via CDN for styling
+2. Make it fully responsive (mobile-first)
+3. Include smooth animations and hover effects
+4. Use modern HTML5 semantic elements
+5. Add proper meta tags and accessibility
+6. Include interactive elements with JavaScript
 
-DESIGN PRINCIPLES TO FOLLOW:
-- Use a cohesive color palette (prefer gradients and modern colors)
-- Implement proper spacing and typography hierarchy
-- Add subtle shadows, rounded corners, and modern UI elements
-- Include hover effects and smooth transitions
-- Use modern layout techniques (Grid, Flexbox)
-- Add loading states and interactive feedback
-- Include icons (use Heroicons or similar via CDN)
-- Implement modern card designs and sections
-- Use appropriate contrast ratios for accessibility
-- Add subtle background patterns or gradients
-
-STRUCTURE REQUIREMENTS:
-- Navigation bar with smooth scroll links
-- Hero section with compelling design and CTAs
-- Multiple content sections (features, about, services, testimonials, etc.)
-- Contact/CTA section
+STRUCTURE:
+- Navigation bar with smooth scroll
+- Hero section with compelling design
+- 2-3 content sections (features/about/services)
+- Contact section with CTA
 - Professional footer
-- Responsive mobile navigation
 
-TECHNICAL REQUIREMENTS:
-- Return ONLY the HTML content for inside the <body> tag
-- Do NOT include <!DOCTYPE html>, <html>, <head>, or <body> tags
-- Include Tailwind CSS classes for all styling
-- Add JavaScript for interactive elements (smooth scrolling, animations, mobile menu)
-- Ensure all links and buttons are functional
-- Use semantic HTML for better SEO and accessibility
+DESIGN:
+- Modern color palette with gradients
+- Professional typography (Inter font)
+- Subtle shadows and rounded corners
+- Hover effects and transitions
+- Mobile-responsive navigation
+- Loading states and feedback
 
-Make this website look like it was designed by a professional agency with attention to:
-- Modern UI/UX trends (2024 standards)
-- Beautiful typography and spacing
-- Engaging animations and interactions
-- Professional color schemes and gradients
-- Mobile-first responsive design
-- Clean, minimalist yet engaging design
+TECHNICAL:
+- Return ONLY the content for inside <body> tag
+- Do NOT include DOCTYPE, html, head, or body tags
+- Use Tailwind CSS classes for all styling
+- Add JavaScript for interactions
+- Ensure semantic HTML structure
 
-The website should be visually impressive and ready for production use.
+Make it visually impressive and production-ready with modern 2024 UI/UX standards.
 `
 
     console.log('Generating content with Gemini...')
     let result, response, generatedCode
+    
     try {
-      result = await model.generateContent(enhancedPrompt)
+      // Add timeout handling for Gemini API call
+      const genPromise = model.generateContent(enhancedPrompt)
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Generation timeout - please try with a simpler prompt')), 25000)
+      })
+      
+      result = await Promise.race([genPromise, timeoutPromise])
       console.log('Content generation complete')
       response = await result.response
       console.log('Response received')
@@ -154,22 +143,33 @@ The website should be visually impressive and ready for production use.
     console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     
-    // Check if it's a Gemini API specific error
-    if (error && typeof error === 'object' && 'message' in error) {
-      console.error('Gemini API Error Details:', error)
+    // Check if it's a timeout error
+    let errorMessage = 'Failed to generate website'
+    let isTimeout = false
+    
+    if (error instanceof Error) {
+      if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+        errorMessage = 'Request timed out. Please try with a simpler prompt.'
+        isTimeout = true
+      } else {
+        errorMessage = error.message
+      }
     }
     
-    // Ensure we always return valid JSON
+    // Always return valid JSON with proper headers
     const errorResponse = {
-      error: 'Failed to generate website',
+      error: errorMessage,
+      isTimeout,
       details: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      suggestion: isTimeout ? 'Try using a shorter, more specific prompt' : 'Please check your input and try again'
     }
     
     return new NextResponse(JSON.stringify(errorResponse), {
-      status: 500,
+      status: isTimeout ? 408 : 500,
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
       },
     })
   }

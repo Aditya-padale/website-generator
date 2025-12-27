@@ -25,13 +25,21 @@ export default function WebsiteGenerator() {
     
     try {
       console.log('Sending request to generate-website API...')
+      
+      // Add timeout to the fetch request itself
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 35000) // 35 seconds
+      
       const response = await fetch('/api/generate-website', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ prompt }),
+        signal: controller.signal
       })
+      
+      clearTimeout(timeoutId)
 
       console.log('Response status:', response.status)
       console.log('Response headers:', Object.fromEntries(response.headers.entries()))
@@ -45,7 +53,7 @@ export default function WebsiteGenerator() {
         data = JSON.parse(responseText)
       } catch (parseError) {
         console.error('JSON parse error:', parseError)
-        throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}...`)
+        throw new Error(`Server returned invalid response. Please try again with a simpler prompt.`)
       }
       
       if (!response.ok) {
@@ -60,7 +68,17 @@ export default function WebsiteGenerator() {
       }
     } catch (error) {
       console.error('Error generating website:', error)
-      alert(`Failed to generate website: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      
+      let errorMessage = 'Unknown error'
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'Request timed out. Please try with a simpler prompt or try again later.'
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
+      alert(`Failed to generate website: ${errorMessage}`)
       setCurrentStep('input')
     } finally {
       setIsGenerating(false)
@@ -73,13 +91,20 @@ export default function WebsiteGenerator() {
     setIsDeploying(true)
 
     try {
+      // Add timeout to the deploy request
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 35000) // 35 seconds
+      
       const response = await fetch('/api/deploy-website', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ code: generatedCode, prompt }),
+        signal: controller.signal
       })
+      
+      clearTimeout(timeoutId)
 
       // Get the raw response text first
       const responseText = await response.text()
@@ -90,7 +115,7 @@ export default function WebsiteGenerator() {
         data = JSON.parse(responseText)
       } catch (parseError) {
         console.error('Deploy JSON parse error:', parseError)
-        throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}...`)
+        throw new Error(`Server returned invalid response during deployment. Please try again.`)
       }
       
       if (response.ok && data.url) {
@@ -101,7 +126,17 @@ export default function WebsiteGenerator() {
       }
     } catch (error) {
       console.error('Error deploying website:', error)
-      alert(`Failed to deploy website: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      
+      let errorMessage = 'Unknown error'
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'Deployment timed out. Please try again later.'
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
+      alert(`Failed to deploy website: ${errorMessage}`)
     } finally {
       setIsDeploying(false)
     }

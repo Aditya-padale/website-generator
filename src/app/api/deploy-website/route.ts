@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export const maxDuration = 60;
+export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
   try {
@@ -141,11 +141,19 @@ ${code}
 
   } catch (error) {
     console.error('Error deploying website:', error)
-    return new NextResponse(JSON.stringify(
-      { error: 'Failed to deploy website' }
-    ), {
+    
+    const errorResponse = {
+      error: 'Failed to deploy website',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }
+    
+    return new NextResponse(JSON.stringify(errorResponse), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      }
     })
   }
 }
